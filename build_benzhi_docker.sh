@@ -1,10 +1,15 @@
-#!/usr/bin/env bash
-# 用法: bash build_benzhi_docker.sh <镜像名> <平台>
-# 示例: bash build_benzhi_docker.sh bronzeform linux/amd64
-set -euo pipefail
+#!/bin/bash
+set -e
 
-IMAGE_NAME="${1:-bronzeform}"
-PLATFORM="${2:-linux/amd64}"
+IMAGE_NAME=${1:-bronzeform}
+DOCKER_PLATFORM=${2:-linux/amd64}
 
-docker buildx build --platform "${PLATFORM}" --load -t "${IMAGE_NAME}" .
-echo "built ${IMAGE_NAME} for ${PLATFORM}"
+docker build --platform "$DOCKER_PLATFORM" -f benzhi.Dockerfile -t "$IMAGE_NAME" .
+
+echo ""
+echo "✅ Docker image '$IMAGE_NAME' built successfully!"
+echo ""
+echo "📋 Next steps (for testing):"
+echo "  • Smoke test：docker run --rm $IMAGE_NAME --smoke-test"
+echo "  • Start server：docker run --rm -P $IMAGE_NAME --addr :8080 --db ./bronzeform.db"
+echo ""
