@@ -87,7 +87,9 @@ func BuildPairwise(glyphs []model.Glyph) ([]CandidateInput, error) {
 	chrono.SortGlyphsByEra(glyphs)
 	eff := make([]model.Glyph, 0, len(glyphs))
 	for _, g := range glyphs {
-		if g.Status == model.GlyphValid || g.Status == model.GlyphExcluded {
+		// 仅有效字形参与两两比较；残缺(defective)与被研究者排除(excluded)的字形
+		// 拓片质量不达标，不得作为演变候选的源或目标。
+		if g.Status == model.GlyphValid {
 			eff = append(eff, g)
 		}
 	}

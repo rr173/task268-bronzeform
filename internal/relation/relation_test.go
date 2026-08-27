@@ -116,3 +116,33 @@ func TestBuildPairwiseSortsByEra(t *testing.T) {
 		}
 	}
 }
+
+func TestBuildPairwiseExcludesNonValidGlyphs(t *testing.T) {
+	comps := []model.Component{{Part: "从", Position: "center", Direction: model.DirNormal}}
+	glyphs := []model.Glyph{
+		{ID: 1, EraBegin: 900, EraEnd: 850, Status: model.GlyphValid, Components: comps},
+		{ID: 2, EraBegin: 850, EraEnd: 800, Status: model.GlyphValid, Components: comps},
+		{ID: 3, EraBegin: 800, EraEnd: 770, Status: model.GlyphExcluded, Components: comps},  // 被研究者排除
+		{ID: 4, EraBegin: 800, EraEnd: 770, Status: model.GlyphDefective, Components: comps}, // 拓片残缺
+		{ID: 5, EraBegin: 800, EraEnd: 770, Status: model.GlyphPendingSplit, Components: comps},
+	}
+	pairs, err := BuildPairwise(glyphs)
+	if err != nil {
+		t.Fatalf("pairwise: %v", err)
+	}
+	// 仅两个 valid 字形 → 1 对；excluded/defective/pending_split 不得作为源或目标。
+	if len(pairs) != 1 {
+		t.Fatalf("expected 1 pair (only valid glyphs), got %d", len(pairs))
+	}
+	for _, p := range pairs {
+		if p.Source.ID == 3 || p.Target.ID == 3 {
+			t.Errorf("excluded glyph 3 should not appear in pair %d->%d", p.Source.ID, p.Target.ID)
+		}
+		if p.Source.ID == 4 || p.Target.ID == 4 {
+			t.Errorf("defective glyph 4 should not appear in pair %d->%d", p.Source.ID, p.Target.ID)
+		}
+		if p.Source.ID == 5 || p.Target.ID == 5 {
+			t.Errorf("pending_split glyph 5 should not appear in pair %d->%d", p.Source.ID, p.Target.ID)
+		}
+	}
+}
