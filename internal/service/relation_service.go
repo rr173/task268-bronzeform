@@ -115,13 +115,15 @@ func (s *Service) ConfirmRelation(relID int64) error {
 }
 
 // RejectRelation 否决演变关系。
+// 仅 candidate 可被否决；confirmed / borrowed 等已裁决终态不可回退为 rejected，
+// 否则已被纳入版本快照（含冻结版本内容哈希）的证据会与关系实时状态不一致。
 func (s *Service) RejectRelation(relID int64) error {
 	r, err := s.Rels.Get(relID)
 	if err != nil {
 		return err
 	}
-	if r.Status == model.RelRejected {
-		return fmt.Errorf("%w: relation already decided, got %s", model.ErrInvalidState, r.Status)
+	if r.Status != model.RelCandidate {
+		return fmt.Errorf("%w: only candidate can be rejected, got %s", model.ErrInvalidState, r.Status)
 	}
 	return s.Rels.UpdateStatus(relID, model.RelRejected)
 }
