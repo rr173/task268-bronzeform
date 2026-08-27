@@ -40,7 +40,7 @@ func (s *Service) SealBatch(batchID int64) error {
 	if err != nil {
 		return err
 	}
-	if b.Status != model.BatchPublished && b.Status != model.BatchPendingReview {
+	if b.Status != model.BatchPublished {
 		return fmt.Errorf("%w: batch must be published to seal, got %s", model.ErrInvalidState, b.Status)
 	}
 	return s.Batches.UpdateStatus(batchID, model.BatchSealed)
