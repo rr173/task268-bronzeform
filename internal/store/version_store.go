@@ -138,6 +138,11 @@ func (s *VersionStore) SetRelations(versionID int64, relationIDs []int64) error 
 		return err
 	}
 	defer tx.Rollback()
+	// 先清除该版本上一轮的旧绑定，否则已被否决的关系 ID 会残留进新快照。
+	if _, err := tx.Exec(
+		`DELETE FROM version_relations WHERE version_id=?`, versionID); err != nil {
+		return err
+	}
 	for _, rid := range relationIDs {
 		if _, err := tx.Exec(
 			`INSERT OR IGNORE INTO version_relations(version_id, relation_id) VALUES(?,?)`,
