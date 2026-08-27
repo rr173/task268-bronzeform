@@ -23,7 +23,7 @@ func CollectDecided(rels []model.EvolutionRelation, name string) (*SnapshotColle
 	decided := make([]model.EvolutionRelation, 0, len(rels))
 	for _, r := range rels {
 		switch r.Status {
-		case model.RelConfirmed, model.RelBorrowed, model.RelRejected:
+		case model.RelConfirmed, model.RelBorrowed:
 			decided = append(decided, r)
 		}
 	}
