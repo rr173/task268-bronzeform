@@ -13,9 +13,10 @@ func (s *Service) GenerateCandidates(batchID int64) (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	// 逐字加载构件（ListByBatch 不填充 Components）。
+	// 逐字加载构件（ListByBatch 不填充 Components）。仅有效字形参与候选生成，
+	// defective 字形（拓片残缺）不可作为演变来源，不参与两两比较。
 	for i := range glyphs {
-		if glyphs[i].Status != model.GlyphValid && glyphs[i].Status != model.GlyphDefective {
+		if glyphs[i].Status != model.GlyphValid {
 			continue
 		}
 		full, err := s.Glyphs.Get(glyphs[i].ID)

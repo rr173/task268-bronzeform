@@ -83,11 +83,12 @@ func BuildCandidate(in CandidateInput) (*Candidate, error) {
 
 // BuildPairwise 对批次内全部字形两两生成候选（仅有效字形参与，组件需由调用方填充）。
 // 返回生成的关系输入对（去重：同一对只生成一次，源按年代排序在前）。
+// defective 字形（拓片残缺、不可作为演变来源）不参与两两比较，仅 valid 字形入选。
 func BuildPairwise(glyphs []model.Glyph) ([]CandidateInput, error) {
 	chrono.SortGlyphsByEra(glyphs)
 	eff := make([]model.Glyph, 0, len(glyphs))
 	for _, g := range glyphs {
-		if g.Status == model.GlyphValid || g.Status == model.GlyphDefective {
+		if g.Status == model.GlyphValid {
 			eff = append(eff, g)
 		}
 	}

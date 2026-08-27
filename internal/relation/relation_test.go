@@ -95,6 +95,29 @@ func TestBuildCandidateTooDissimilar(t *testing.T) {
 	}
 }
 
+func TestBuildPairwiseExcludesDefective(t *testing.T) {
+	// defective 字形（拓片残缺、不可作为演变来源）即便未被排除，也不应参与两两比较。
+	glyphs := []model.Glyph{
+		{ID: 1, EraBegin: 900, EraEnd: 850, Status: model.GlyphValid, Components: []model.Component{{Part: "从"}}},
+		{ID: 2, EraBegin: 850, EraEnd: 800, Status: model.GlyphDefective, Components: []model.Component{{Part: "从"}}},
+		{ID: 3, EraBegin: 800, EraEnd: 770, Status: model.GlyphValid, Components: []model.Component{{Part: "从"}}},
+	}
+	pairs, err := BuildPairwise(glyphs)
+	if err != nil {
+		t.Fatalf("pairwise: %v", err)
+	}
+	// 仅 G1、G3 有效 → 1 对；defective 的 G2 不应出现。
+	if len(pairs) != 1 {
+		t.Fatalf("expected 1 pair (defective excluded), got %d", len(pairs))
+	}
+	for _, p := range pairs {
+		if p.Source.ID == 2 || p.Target.ID == 2 {
+			t.Fatalf("defective glyph G2 must not participate in any pair, got %d→%d",
+				p.Source.ID, p.Target.ID)
+		}
+	}
+}
+
 func TestBuildPairwiseSortsByEra(t *testing.T) {
 	glyphs := []model.Glyph{
 		{ID: 3, EraBegin: 800, EraEnd: 770, Status: model.GlyphValid, Components: []model.Component{{Part: "从"}}},
