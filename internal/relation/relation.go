@@ -31,9 +31,9 @@ type Candidate struct {
 // BuildCandidate 由构形比较与年代可行性生成候选关系。
 // 判定规则（按优先级）：
 //  1. 构形相似度过低（<0.5）：不构成演变候选 → 返回 nil（跳过）。
-//  2. 构形高度相似但存在结构差异 → 借形候选（borrowing），状态 borrowed 需研究者确认。
-//  3. 年代逆序（score<0）→ chrono_conflict，不可作演变。
-//  4. 年代可行（score>0）→ evolution candidate，待裁决。
+//  2. 年代逆序（score<0）→ chrono_conflict，不可作演变，亦不构成借形（年代冲突优先于借形，避免逆序证据被借形掩盖）。
+//  3. 构形高度相似但存在结构差异（年代可行）→ 借形候选（borrowing），状态 borrowed 需研究者确认。
+//  4. 年代可行且构形无借形依据 → evolution candidate，待裁决。
 func BuildCandidate(in CandidateInput) (*Candidate, error) {
 	if in.Source.ID == in.Target.ID {
 		return nil, model.ErrSelfReference
@@ -46,19 +46,7 @@ func BuildCandidate(in CandidateInput) (*Candidate, error) {
 	_ = feas.StrictOK
 	diffDesc := glyph.DescribeDiff(diff)
 
-	// 借形：高度相似但有结构差异。
-	if borrowing, reason := glyph.EvalBorrowing(diff); borrowing {
-		return &Candidate{
-			Kind:        model.KindBorrowing,
-			Status:      model.RelBorrowed,
-			ChronoScore: feas.Score,
-			AddedParts:  diff.AddedParts,
-			Removed:     diff.RemovedParts,
-			DirChanged:  diff.DirChanged,
-			Evidence:    fmt.Sprintf("%s；%s", diffDesc, reason),
-		}, nil
-	}
-	// 年代逆序。
+	// 年代逆序优先：源晚于目标即不可作演变，亦不得判为借形。
 	if feas.Score < 0 {
 		return &Candidate{
 			Kind:        model.KindEvolution,
@@ -68,6 +56,18 @@ func BuildCandidate(in CandidateInput) (*Candidate, error) {
 			Removed:     diff.RemovedParts,
 			DirChanged:  diff.DirChanged,
 			Evidence:    fmt.Sprintf("%s；%s", diffDesc, feas.Reason),
+		}, nil
+	}
+	// 借形：构形高度相似但存在结构差异（年代可行）。
+	if borrowing, reason := glyph.EvalBorrowing(diff); borrowing {
+		return &Candidate{
+			Kind:        model.KindBorrowing,
+			Status:      model.RelBorrowed,
+			ChronoScore: feas.Score,
+			AddedParts:  diff.AddedParts,
+			Removed:     diff.RemovedParts,
+			DirChanged:  diff.DirChanged,
+			Evidence:    fmt.Sprintf("%s；%s", diffDesc, reason),
 		}, nil
 	}
 	// 年代可行 → 演变候选。

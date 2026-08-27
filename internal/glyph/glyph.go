@@ -138,7 +138,8 @@ func DescribeDiff(res CompareResult) string {
 }
 
 // EvalBorrowing 评估两个字形是否构成借形候选：
-// 构形高度相似（相似度 ≥0.8）但存在关键差异（构件增删或方向变化）时，提示可能为借形而非演变。
+// 构形高度相似（相似度 ≥0.8）且存在关键差异（构件增删或方向变化）时，提示可能为借形而非演变。
+// 构形完全一致（无增删、无方向变化）不构成借形，应作为普通演变候选处理。
 func EvalBorrowing(res CompareResult) (isBorrowingCandidate bool, reason string) {
 	if res.Similarity < 0.8 {
 		return false, "构形相似度不足，不构成借形候选"
@@ -146,5 +147,5 @@ func EvalBorrowing(res CompareResult) (isBorrowingCandidate bool, reason string)
 	if len(res.AddedParts) > 0 || len(res.RemovedParts) > 0 || len(res.DirChanged) > 0 {
 		return true, "构形高度相似但存在结构差异，可能为同形异源借形"
 	}
-	return true, "构形高度相似，视为借形候选"
+	return false, "构形完全一致，为普通演变候选而非借形"
 }

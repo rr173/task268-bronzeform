@@ -70,6 +70,35 @@ func TestBuildCandidateChronoConflict(t *testing.T) {
 	if cand.Status != model.RelChronoConflict {
 		t.Fatalf("expected chrono_conflict, got %s", cand.Status)
 	}
+	if cand.Kind != model.KindEvolution {
+		t.Fatalf("expected evolution kind for chrono_conflict, got %s", cand.Kind)
+	}
+}
+
+// TestBuildCandidateChronoConflictBeatsBorrowing 回归：年代逆序但构形高度相似且存在结构差异时，
+// chrono_conflict 必须优先于 borrowed（年代冲突证据不得被借形掩盖）。
+func TestBuildCandidateChronoConflictBeatsBorrowing(t *testing.T) {
+	src := model.Glyph{ID: 1, EraBegin: 400, EraEnd: 350, Components: []model.Component{
+		{Part: "𠂉", Position: "top", Direction: model.DirNormal},
+		{Part: "从", Position: "bottom", Direction: model.DirNormal},
+	}}
+	dst := model.Glyph{ID: 2, EraBegin: 900, EraEnd: 850, Components: []model.Component{
+		{Part: "𠂉", Position: "top", Direction: model.DirNormal},
+		{Part: "从", Position: "bottom", Direction: model.DirRotated}, // 方向变化 → 借形依据，但年代逆序
+	}}
+	cand, err := BuildCandidate(CandidateInput{Source: src, Target: dst})
+	if err != nil {
+		t.Fatalf("build: %v", err)
+	}
+	if cand == nil {
+		t.Fatal("expected candidate")
+	}
+	if cand.Status != model.RelChronoConflict {
+		t.Fatalf("expected chrono_conflict (era priority over borrowing), got %s", cand.Status)
+	}
+	if cand.ChronoScore >= 0 {
+		t.Fatalf("expected negative chrono score for reversed era, got %d", cand.ChronoScore)
+	}
 }
 
 func TestBuildCandidateSelfReference(t *testing.T) {
