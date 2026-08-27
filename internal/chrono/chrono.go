@@ -48,13 +48,14 @@ func Eval(srcBegin, srcEnd, dstBegin, dstEnd int) Feasibility {
 	return f
 }
 
-// SortGlyphsByEra 按年代排序字形（数值大的（早）在前，用于候选生成顺序）。
+// SortGlyphsByEra 按年代排序字形（公元前纪年，数值越大年代越早；
+// 演变源须不晚于目标，故数值大（早）的在前，用作候选生成顺序）。
 func SortGlyphsByEra(glyphs []model.Glyph) {
 	sort.SliceStable(glyphs, func(i, j int) bool {
 		if glyphs[i].EraBegin != glyphs[j].EraBegin {
-			return glyphs[i].EraBegin < glyphs[j].EraBegin
+			return glyphs[i].EraBegin > glyphs[j].EraBegin
 		}
-		return glyphs[i].EraEnd < glyphs[j].EraEnd
+		return glyphs[i].EraEnd > glyphs[j].EraEnd
 	})
 }
 
